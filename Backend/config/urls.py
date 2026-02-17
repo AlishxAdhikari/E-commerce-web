@@ -5,7 +5,8 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/products/', include('products.urls')), # This connects your app
+    path('api/products/', include('products.urls')), 
+    path('api/cart/', include('cart.urls')),  # This connects your cart app
 ]
 
 if settings.DEBUG:

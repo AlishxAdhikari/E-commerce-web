@@ -1,118 +1,87 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import axios from 'axios';
+import { useCartStore } from '../store/useCartStore';
 
 export default function ProductDetail() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [activeImage, setActiveImage] = useState(null); // State for the gallery switcher
+  const [activeImage, setActiveImage] = useState(null);
+  const [quantity, setQuantity] = useState(1);
 
+  const { triggerToast, updateCount } = useCartStore();
   const backendURL = "http://127.0.0.1:8000";
 
   useEffect(() => {
     axios.get(`${backendURL}/api/products/${id}/`)
       .then(res => {
         setProduct(res.data);
-        // Set the initial main image from the primary image field
         setActiveImage(res.data.image);
         setLoading(false);
       })
       .catch(err => {
-        console.error("Django Error:", err);
+        console.error(err);
         setLoading(false);
       });
   }, [id]);
 
-  if (loading) return (
-    <div className="h-screen flex items-center justify-center text-xl font-semibold">
-      <div className="animate-pulse">Loading product details...</div>
-    </div>
-  );
+  const handleAddToCart = async () => {
+    try {
+      const res = await axios.post(`${backendURL}/api/cart/add/`, {
+        product_id: product.id,
+        quantity: quantity
+      });
 
-  if (!product) return (
-    <div className="h-screen flex items-center justify-center text-xl text-red-500">
-      Product not found!
-    </div>
-  );
-
-  // Helper function to format image URLs
-  const getFullImageUrl = (imagePath) => {
-    if (!imagePath) return "";
-    return imagePath.startsWith('http') ? imagePath : `${backendURL}${imagePath}`;
+      // Update count and show the nice toast
+      updateCount(res.data.cart_count);
+      triggerToast(`${product.title} added to cart!`);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
+  if (loading) return <div className="h-screen flex items-center justify-center font-bold">Loading...</div>;
+
+  const getFullUrl = (path) => path?.startsWith('http') ? path : `${backendURL}${path}`;
+
   return (
-    <div className="container mx-auto p-4 md:p-10 min-h-screen">
-      <div className="flex flex-col md:flex-row gap-10 bg-white p-6 md:p-10 rounded-3xl shadow-sm border border-gray-100">
+    <div className="container mx-auto p-6 md:p-10 min-h-screen">
+      <div className="flex flex-col md:flex-row gap-12 bg-white p-8 rounded-3xl shadow-sm border border-gray-100">
         
-        {/* LEFT SIDE: Image Gallery */}
+        {/* Image Section */}
         <div className="w-full md:w-1/2">
-          {/* Main Large Display */}
-          <div className="aspect-square flex items-center justify-center bg-gray-50 rounded-2xl p-5 mb-4 overflow-hidden border border-gray-50">
-            <img 
-              src={getFullImageUrl(activeImage)} 
-              alt={product.title}
-              className="max-h-full max-w-full object-contain transition-all duration-500 transform hover:scale-105" 
-            />
+          <div className="aspect-square bg-gray-50 rounded-2xl p-8 flex items-center justify-center border border-gray-50 mb-4">
+            <img src={getFullUrl(activeImage)} alt={product.title} className="max-h-full object-contain" />
           </div>
-
-          {/* Thumbnail List (If multiple images exist) */}
-          {product.images && product.images.length > 0 && (
-            <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
-              {/* Primary Image Thumbnail */}
-              <button 
-                onClick={() => setActiveImage(product.image)}
-                className={`flex-shrink-0 w-20 h-20 rounded-xl border-2 overflow-hidden bg-gray-50 ${activeImage === product.image ? 'border-blue-600' : 'border-transparent'}`}
-              >
-                <img src={getFullImageUrl(product.image)} className="w-full h-full object-cover" alt="primary" />
-              </button>
-
-              {/* Related Gallery Thumbnails */}
-              {product.images.map((imgObj) => (
-                <button 
-                  key={imgObj.id}
-                  onClick={() => setActiveImage(imgObj.image)}
-                  className={`flex-shrink-0 w-20 h-20 rounded-xl border-2 overflow-hidden bg-gray-50 ${activeImage === imgObj.image ? 'border-blue-600' : 'border-transparent'}`}
-                >
-                  <img src={getFullImageUrl(imgObj.image)} className="w-full h-full object-cover" alt="gallery" />
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="flex gap-2 overflow-x-auto">
+             <button onClick={() => setActiveImage(product.image)} className={`w-20 h-20 border-2 rounded-lg p-1 ${activeImage === product.image ? 'border-blue-600' : 'border-transparent'}`}>
+                <img src={getFullUrl(product.image)} className="w-full h-full object-contain" />
+             </button>
+             {product.images?.map(img => (
+               <button key={img.id} onClick={() => setActiveImage(img.image)} className={`w-20 h-20 border-2 rounded-lg p-1 ${activeImage === img.image ? 'border-blue-600' : 'border-transparent'}`}>
+                  <img src={getFullUrl(img.image)} className="w-full h-full object-contain" />
+               </button>
+             ))}
+          </div>
         </div>
-        
-        {/* RIGHT SIDE: Product Info */}
-        <div className="flex flex-col justify-center w-full md:w-1/2">
-          <div className="mb-6">
-            <span className="text-xs font-black text-blue-600 uppercase tracking-widest bg-blue-50 px-3 py-1 rounded-full">
-              {product.category}
-            </span>
-            <h1 className="text-3xl md:text-5xl font-black text-gray-900 leading-tight mt-4 mb-2">
-              {product.title}
-            </h1>
-            
-            <div className="flex items-center gap-4">
-              <span className="text-3xl font-bold text-gray-900">${product.price}</span>
-              <div className="flex items-center bg-yellow-400 text-white px-3 py-1 rounded-lg text-sm font-bold shadow-sm">
-                ★ {product.rating_rate || "0.0"}
-              </div>
+
+        {/* Info Section */}
+        <div className="w-full md:w-1/2 flex flex-col justify-center">
+          <h1 className="text-5xl font-black text-gray-900 mb-4 tracking-tighter">{product.title}</h1>
+          <p className="text-3xl font-bold text-gray-900 mb-8">${product.price}</p>
+          <div className="border-t border-b py-8 mb-8">
+            <p className="text-gray-500 leading-relaxed text-lg">{product.description}</p>
+          </div>
+
+          <div className="flex gap-4">
+            <div className="flex items-center border-2 border-gray-200 rounded-2xl overflow-hidden">
+              <button onClick={() => setQuantity(q => Math.max(1, q-1))} className="px-6 py-4 bg-gray-50 hover:bg-gray-100 font-bold">-</button>
+              <span className="px-8 py-4 font-black text-xl">{quantity}</span>
+              <button onClick={() => setQuantity(q => q+1)} className="px-6 py-4 bg-gray-50 hover:bg-gray-100 font-bold">+</button>
             </div>
-          </div>
-
-          <div className="border-t border-b border-gray-100 py-6 mb-8">
-            <h3 className="text-sm font-bold text-gray-400 uppercase mb-3">Product Description</h3>
-            <p className="text-gray-600 leading-relaxed">
-              {product.description}
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button className="flex-1 bg-blue-600 text-white px-8 py-4 rounded-2xl font-bold text-lg hover:bg-blue-700 hover:shadow-xl transition-all active:scale-95 shadow-lg shadow-blue-200">
+            <button onClick={handleAddToCart} className="flex-1 bg-blue-600 text-white font-black text-xl rounded-2xl hover:bg-blue-700 transition-all shadow-xl shadow-blue-100 active:scale-95">
               Add to Cart
-            </button>
-            <button className="px-8 py-4 rounded-2xl border-2 border-gray-200 font-bold text-gray-400 hover:bg-gray-50 transition-all">
-              ♡ Wishlist
             </button>
           </div>
         </div>
