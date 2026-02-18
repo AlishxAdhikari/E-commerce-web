@@ -1,0 +1,21 @@
+env/
+
+.vscode
+node_modules
+dist
+
+# Virtual Environment
+env/
+Backend/env/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Database
+db.sqlite3
+Backend/db.sqlite3
+
+# Media files (optional if you don’t want images in repo)
+media/
+Backend/media/
