@@ -19,3 +19,5 @@ Backend/db.sqlite3
 # Media files (optional if you don’t want images in repo)
 media/
 Backend/media/
+
+notes.md

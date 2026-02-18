@@ -59,7 +59,7 @@ export default function Navbar() {
           <span className={`text-2xl font-black tracking-tighter uppercase transition-all duration-500 ${
             isLiquorMode ? 'text-purple-400 italic tracking-widest' : 'text-gray-900'
           }`}>
-            {isLiquorMode ? "JHAPPSTORE" : "ZAPPSTORE"}
+            {isLiquorMode ? "JHYAPPSTORE" : "ZAPPSTORE"}
           </span>
         </Link>
 
